@@ -7,13 +7,14 @@ This program calculates the Euclidean distance and differences along the x, y, a
 - Python 3.x
 - OpenCV
 - NumPy
+- Apriltag
 
 ## Installation
 
 1. Clone the repository:
     ```sh
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone <https://github.com/LeoCheung0804/Apriltag_tags_distance_pose.git>
+    cd <Apriltag_tags_distance_pose>
     ```
 
 2. Install the required packages:
