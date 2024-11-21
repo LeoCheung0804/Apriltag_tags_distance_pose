@@ -39,7 +39,24 @@ def draw_axes(frame, pose, camera_params, tag_size):
     cv2.line(frame, origin, tuple(imgpts[2].ravel().astype(int)), (0, 255, 0), 2)  # Y-axis in green
     cv2.line(frame, origin, tuple(imgpts[3].ravel().astype(int)), (255, 0, 0), 2)  # Z-axis in blue
 
+def annotate_tag_with_id(frame, detection, font, font_scale, font_thickness, text_color, bg_color):
+    tag_id = str(detection.tag_id)
+    (text_width, text_height), baseline = cv2.getTextSize(tag_id, font, font_scale, font_thickness)
+    text_x, text_y = int(detection.center[0]), int(detection.center[1]) - 10
+
+    # Draw the background rectangle
+    cv2.rectangle(frame, (text_x, text_y - text_height - baseline), (text_x + text_width, text_y + baseline), bg_color, cv2.FILLED)
+
+    # Draw the text
+    cv2.putText(frame, tag_id, (text_x, text_y), font, font_scale, text_color, font_thickness)
+
 def main():
+    bg_color = (0, 255, 255)  # Yellow background
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.5
+    font_thickness = 2
+    text_color = (0, 0, 0)  # Black text
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -100,6 +117,9 @@ def main():
 
             # Draw the axes
             draw_axes(frame, pose, camera_params, tag_size)
+
+            # Annotate the tag with its ID
+            annotate_tag_with_id(frame, detection, font, font_scale, font_thickness, text_color, bg_color)
 
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
