@@ -60,7 +60,7 @@ while True:
         )
         cv2.putText(
             image,
-            f"dx: {diff_x:.2f}m, dy: {diff_y:.2f}m, dz: {diff_z:.2f}m",
+            f"dx: {diff_x[0]:.2f}m, dy: {diff_y[0]:.2f}m, dz: {diff_z[0]:.2f}m",
             (50, 70),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
