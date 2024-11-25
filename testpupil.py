@@ -41,7 +41,7 @@ def draw_axes(image, camera_params, tag_size, rvec, tvec):
     ).reshape(-1, 3)
 
     fx, fy, cx, cy = camera_params
-    camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
+    camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float32)
     dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
     imgpts, _ = cv2.projectPoints(axes_points, rvec, tvec, camera_matrix, dist_coeffs)
@@ -95,7 +95,7 @@ while True:
         print(tag_id)  # Print the tag ID
 
         # Show the rotation matrix
-        show_rotation_matrix(r)
+        # show_rotation_matrix(r)
 
         # Get the coordinates of the corners
         corners = r.corners.astype(int)
@@ -133,9 +133,11 @@ while True:
             2,
         )
 
-        # Draw the axes for each detected tag
-        rvec = r.pose_R
+        # Convert rotation matrix to rotation vector
+        rvec, _ = cv2.Rodrigues(r.pose_R)
         tvec = r.pose_t
+
+        # Draw the axes for each detected tag
         image = draw_axes(image, camera_params, tag_size, rvec, tvec)
 
     cv2.imshow("AprilTags", image)
