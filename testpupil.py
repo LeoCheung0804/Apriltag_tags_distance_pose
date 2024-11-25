@@ -1,11 +1,33 @@
 import cv2
 import pupil_apriltags as pl
+import numpy as np
 
 # Initialize video capture
 cap = cv2.VideoCapture(0)  # Change 0 to your camera index if needed
 
 # Initialize the detector
 detector = pl.Detector(families="tag36h11")
+
+# Camera calibration parameters (example values, you need to calibrate your camera)
+camera_matrix = np.array([[800, 0, 320], [0, 800, 240], [0, 0, 1]], dtype=np.float32)
+dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
+
+def draw_axes(image, corners, rvec, tvec, camera_matrix, dist_coeffs):
+    axis_length = 0.05  # Length of the axes in meters
+    axis_points = np.float32([
+        [axis_length, 0, 0], 
+        [0, axis_length, 0], 
+        [0, 0, axis_length]
+    ]).reshape(-1, 3)
+
+    imgpts, _ = cv2.projectPoints(axis_points, rvec, tvec, camera_matrix, dist_coeffs)
+    imgpts = imgpts.astype(int)
+
+    corner = tuple(corners[0].ravel())
+    image = cv2.line(image, corner, tuple(imgpts[0].ravel()), (0, 0, 255), 5)
+    image = cv2.line(image, corner, tuple(imgpts[1].ravel()), (0, 255, 0), 5)
+    image = cv2.line(image, corner, tuple(imgpts[2].ravel()), (255, 0, 0), 5)
+    return image
 
 while True:
     ret, image = cap.read()
@@ -55,8 +77,14 @@ while True:
             2,
         )
 
-    cv2.imshow("AprilTags", image)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+        # Estimate pose of the AprilTag
+        rvec, tvec, _ = cv2.estimateAffine3D(corners, np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], dtype=np.float32))
+
+        # Draw axes
+        image = draw_axes(image, corners, rvec, tvec, camera_matrix, dist_coeffs)
+
+    cv2.imshow('AprilTag Detection', image)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()
