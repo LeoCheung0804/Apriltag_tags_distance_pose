@@ -1,6 +1,6 @@
 import cv2
 import pupil_apriltags as pl
-import numpy
+import numpy as np
 
 # Initialize video capture
 cap = cv2.VideoCapture(0)  # Change 0 to your camera index if needed
@@ -29,9 +29,31 @@ def show_rotation_matrix(detection):
 def calculate_distance_and_differences(tag1, tag2):
     t1 = tag1.pose_t
     t2 = tag2.pose_t
-    distance = numpy.linalg.norm(t1 - t2)
+    distance = np.linalg.norm(t1 - t2)
     diff_x, diff_y, diff_z = t1 - t2
     return distance, diff_x, diff_y, diff_z
+
+
+def draw_axes(image, camera_params, tag_size, rvec, tvec):
+    axis_length = tag_size / 2
+    axes_points = np.float32(
+        [[0, 0, 0], [axis_length, 0, 0], [0, axis_length, 0], [0, 0, axis_length]]
+    ).reshape(-1, 3)
+
+    fx, fy, cx, cy = camera_params
+    camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
+    dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
+
+    imgpts, _ = cv2.projectPoints(axes_points, rvec, tvec, camera_matrix, dist_coeffs)
+    imgpts = np.int32(imgpts).reshape(-1, 2)
+
+    # Draw the axes
+    origin = tuple(imgpts[0])
+    image = cv2.line(image, origin, tuple(imgpts[1]), (0, 0, 255), 3)  # X-axis in red
+    image = cv2.line(image, origin, tuple(imgpts[2]), (0, 255, 0), 3)  # Y-axis in green
+    image = cv2.line(image, origin, tuple(imgpts[3]), (255, 0, 0), 3)  # Z-axis in blue
+
+    return image
 
 
 while True:
@@ -110,6 +132,11 @@ while True:
             (0, 255, 0),
             2,
         )
+
+        # Draw the axes for each detected tag
+        rvec = r.pose_R
+        tvec = r.pose_t
+        image = draw_axes(image, camera_params, tag_size, rvec, tvec)
 
     cv2.imshow("AprilTags", image)
     if cv2.waitKey(1) & 0xFF == ord("q"):
