@@ -8,6 +8,12 @@ cap = cv2.VideoCapture(0)  # Change 0 to your camera index if needed
 # Initialize the detector
 detector = pl.Detector(families="tag36h11")
 
+# Camera parameters (fx, fy, cx, cy)
+fx, fy = 416, 436  # Example focal length in pixels
+cx, cy = 327, 375  # Example center point in pixels
+camera_params = (fx, fy, cx, cy)
+tag_size = 0.077  # Replace with your actual tag size in meters
+
 def show_rotation_matrix(detection):
     if hasattr(detection, 'pose_R'):
         print("Rotation Matrix for tag ID {}: \n{}".format(detection.tag_id, detection.pose_R))
@@ -20,7 +26,7 @@ while True:
         break
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    results = detector.detect(gray, estimate_tag_pose=True)
+    results = detector.detect(gray, estimate_tag_pose=True, camera_params=camera_params, tag_size=tag_size)
 
     for r in results:
         tag_id = r.tag_id
