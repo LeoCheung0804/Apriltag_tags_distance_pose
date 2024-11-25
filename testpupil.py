@@ -11,7 +11,7 @@ detector = pl.Detector(families="tag36h11")
 # Camera parameters (fx, fy, cx, cy)
 fx, fy = 416, 436  # Example focal length in pixels
 cx, cy = 327, 375  # Example center point in pixels
-camera_params = (fx, fy, cx, cy)
+camera_params = [fx, fy, cx, cy]
 tag_size = 0.077  # Replace with your actual tag size in meters
 
 
