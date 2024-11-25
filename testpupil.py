@@ -14,11 +14,25 @@ cx, cy = 327, 375  # Example center point in pixels
 camera_params = (fx, fy, cx, cy)
 tag_size = 0.077  # Replace with your actual tag size in meters
 
+
 def show_rotation_matrix(detection):
-    if hasattr(detection, 'pose_R'):
-        print("Rotation Matrix for tag ID {}: \n{}".format(detection.tag_id, detection.pose_R))
+    if hasattr(detection, "pose_R"):
+        print(
+            "Rotation Matrix for tag ID {}: \n{}".format(
+                detection.tag_id, detection.pose_R
+            )
+        )
     else:
         print("Rotation Matrix not available for tag ID {}".format(detection.tag_id))
+
+
+def calculate_distance_and_differences(tag1, tag2):
+    t1 = tag1.pose_t
+    t2 = tag2.pose_t
+    distance = numpy.linalg.norm(t1 - t2)
+    diff_x, diff_y, diff_z = t1 - t2
+    return distance, diff_x, diff_y, diff_z
+
 
 while True:
     ret, image = cap.read()
@@ -26,7 +40,33 @@ while True:
         break
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    results = detector.detect(gray, estimate_tag_pose=True, camera_params=camera_params, tag_size=tag_size)
+    results = detector.detect(
+        gray, estimate_tag_pose=True, camera_params=camera_params, tag_size=tag_size
+    )
+
+    if len(results) >= 2:
+        tag1, tag2 = results[0], results[1]
+        distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(
+            tag1, tag2
+        )
+        cv2.putText(
+            image,
+            f"Distance: {distance:.2f}m",
+            (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+        )
+        cv2.putText(
+            image,
+            f"dx: {diff_x:.2f}m, dy: {diff_y:.2f}m, dz: {diff_z:.2f}m",
+            (50, 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            2,
+        )
 
     for r in results:
         tag_id = r.tag_id
