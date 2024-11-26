@@ -3,7 +3,7 @@ import pupil_apriltags as pl
 import numpy as np
 
 # Initialize video capture (change 0 to your camera index if needed)
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 # Initialize the AprilTag detector
 detector = pl.Detector(families="tag36h11")
