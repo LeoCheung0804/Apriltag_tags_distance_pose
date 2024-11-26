@@ -98,7 +98,7 @@ while True:
 
     for r in results:
         tag_id = r.tag_id
-        print(tag_id)  # Print the tag ID
+        # print(tag_id)  # Print the tag ID
 
         # Show the rotation matrix
         # show_rotation_matrix(r)
