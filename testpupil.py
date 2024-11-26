@@ -53,6 +53,13 @@ def draw_axes(image, camera_params, tag_size, rvec, tvec):
     return image
 
 
+def calculate_distance_to_camera(detection):
+    """Calculate the distance from the camera to the detected tag."""
+    t = detection.pose_t
+    distance = np.linalg.norm(t) * 100  # Convert to cm
+    return distance
+
+
 while True:
     ret, image = cap.read()
     if not ret:
@@ -102,6 +109,10 @@ while True:
 
         # Show the rotation matrix
         # show_rotation_matrix(r)
+
+        # Calculate and print the distance to the camera
+        distance_to_camera = calculate_distance_to_camera(r)
+        print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
 
         # Get the coordinates of the corners
         corners = r.corners.astype(int)
