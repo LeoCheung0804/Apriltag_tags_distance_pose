@@ -1,6 +1,7 @@
 import cv2
 import pupil_apriltags as pl
 import numpy as np
+import os
 
 # Initialize video capture (change 0 to your camera index if needed)
 cap = cv2.VideoCapture(1)
@@ -13,6 +14,22 @@ fx, fy = 416, 436  # Example focal length in pixels
 cx, cy = 327, 375  # Example center point in pixels
 camera_params = [fx, fy, cx, cy]
 tag_size = 0.077  # Replace with your actual tag size in meters
+
+# Check if the calibration file exists
+calibration_file = "calibration_data.npz"
+if os.path.exists(calibration_file):
+    # Read the camera matrix from the calibration file
+    calibration_data = np.load(calibration_file)
+    camera_matrix = calibration_data["cameraMatrix"]
+    fx = camera_matrix[0, 0]
+    fy = camera_matrix[1, 1]
+    cx = camera_matrix[0, 2]
+    cy = camera_matrix[1, 2]
+    camera_params = [fx, fy, cx, cy]
+else:
+    print(
+        f"Calibration file {calibration_file} not found. Using default camera parameters."
+    )
 
 
 def show_rotation_matrix(detection):
@@ -63,18 +80,36 @@ def calculate_distance_to_camera(detection):
 def display_distance_and_differences(image, results):
     if len(results) >= 2:
         tag1, tag2 = results[0], results[1]
-        distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(tag1, tag2)
+        distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(
+            tag1, tag2
+        )
 
         # Display distance and differences on the image
         text = f"Distance: {distance:.3f}cm"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
         cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
-        cv2.putText(image, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
+        cv2.putText(
+            image,
+            text,
+            (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 0),
+            2,
+        )
 
         text = f"dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
         cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
-        cv2.putText(image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
+        cv2.putText(
+            image,
+            text,
+            (50, 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 0),
+            2,
+        )
 
 
 while True:
@@ -100,8 +135,8 @@ while True:
         distance_to_camera = calculate_distance_to_camera(r)
 
         # Print the distance to the camera if 'd' is typed
-        #if cv2.waitKey(1) & 0xFF == ord("d"):
-        #print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
+        # if cv2.waitKey(1) & 0xFF == ord("d"):
+        # print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
 
         # Get the coordinates of the corners
         corners = r.corners.astype(int)
@@ -132,8 +167,18 @@ while True:
         tag_family = r.tag_family.decode("utf-8")
         text = f"{tag_family} id:{tag_id}"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-        cv2.rectangle(image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1)
-        cv2.putText(image, text, (a[0], a[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
+        cv2.rectangle(
+            image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1
+        )
+        cv2.putText(
+            image,
+            text,
+            (a[0], a[1] - 15),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 0, 0),
+            2,
+        )
 
         # Convert rotation matrix to rotation vector
         rvec, _ = cv2.Rodrigues(r.pose_R)
