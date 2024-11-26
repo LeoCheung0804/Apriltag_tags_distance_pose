@@ -60,16 +60,7 @@ def calculate_distance_to_camera(detection):
     return distance
 
 
-while True:
-    ret, image = cap.read()
-    if not ret:
-        break
-
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    results = detector.detect(
-        gray, estimate_tag_pose=True, camera_params=camera_params, tag_size=tag_size
-    )
-
+def display_distance_and_differences(image, results):
     if len(results) >= 2:
         tag1, tag2 = results[0], results[1]
         distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(tag1, tag2)
@@ -85,6 +76,19 @@ while True:
         cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
         cv2.putText(image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
 
+
+while True:
+    ret, image = cap.read()
+    if not ret:
+        break
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    results = detector.detect(
+        gray, estimate_tag_pose=True, camera_params=camera_params, tag_size=tag_size
+    )
+
+    display_distance_and_differences(image, results)
+
     for r in results:
         tag_id = r.tag_id
         # print(tag_id)  # Print the tag ID
@@ -96,8 +100,8 @@ while True:
         distance_to_camera = calculate_distance_to_camera(r)
 
         # Print the distance to the camera if 'd' is typed
-        if cv2.waitKey(1) & 0xFF == ord("d"):
-            print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
+        #if cv2.waitKey(1) & 0xFF == ord("d"):
+        #print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
 
         # Get the coordinates of the corners
         corners = r.corners.astype(int)
