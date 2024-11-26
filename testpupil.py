@@ -2,10 +2,10 @@ import cv2
 import pupil_apriltags as pl
 import numpy as np
 
-# Initialize video capture
-cap = cv2.VideoCapture(0)  # Change 0 to your camera index if needed
+# Initialize video capture (change 0 to your camera index if needed)
+cap = cv2.VideoCapture(0)
 
-# Initialize the detector
+# Initialize the AprilTag detector
 detector = pl.Detector(families="tag36h11")
 
 # Camera parameters (fx, fy, cx, cy)
@@ -16,25 +16,23 @@ tag_size = 0.077  # Replace with your actual tag size in meters
 
 
 def show_rotation_matrix(detection):
+    """Print the rotation matrix of the detected tag."""
     if hasattr(detection, "pose_R"):
-        print(
-            "Rotation Matrix for tag ID {}: \n{}".format(
-                detection.tag_id, detection.pose_R
-            )
-        )
+        print(f"Rotation Matrix for tag ID {detection.tag_id}: \n{detection.pose_R}")
     else:
-        print("Rotation Matrix not available for tag ID {}".format(detection.tag_id))
+        print(f"Rotation Matrix not available for tag ID {detection.tag_id}")
 
 
 def calculate_distance_and_differences(tag1, tag2):
-    t1 = tag1.pose_t
-    t2 = tag2.pose_t
-    distance = np.linalg.norm(t1 - t2)
-    diff_x, diff_y, diff_z = t1 - t2
+    """Calculate the distance and differences between two detected tags."""
+    t1, t2 = tag1.pose_t, tag2.pose_t
+    distance = np.linalg.norm(t1 - t2) * 100  # Convert to cm
+    diff_x, diff_y, diff_z = (t1 - t2) * 100  # Convert to cm
     return distance, diff_x, diff_y, diff_z
 
 
 def draw_axes(image, camera_params, tag_size, rvec, tvec):
+    """Draw the 3D axes on the detected tag."""
     axis_length = tag_size / 2
     axes_points = np.float32(
         [[0, 0, 0], [axis_length, 0, 0], [0, axis_length, 0], [0, 0, axis_length]]
@@ -47,7 +45,6 @@ def draw_axes(image, camera_params, tag_size, rvec, tvec):
     imgpts, _ = cv2.projectPoints(axes_points, rvec, tvec, camera_matrix, dist_coeffs)
     imgpts = np.int32(imgpts).reshape(-1, 2)
 
-    # Draw the axes
     origin = tuple(imgpts[0])
     image = cv2.line(image, origin, tuple(imgpts[1]), (0, 0, 255), 3)  # X-axis in red
     image = cv2.line(image, origin, tuple(imgpts[2]), (0, 255, 0), 3)  # Y-axis in green
@@ -71,22 +68,31 @@ while True:
         distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(
             tag1, tag2
         )
+
+        # Display distance and differences on the image
+        text = f"Distance: {distance:.3f}cm"
+        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+        cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
         cv2.putText(
             image,
-            f"Distance: {distance:.2f}m",
+            text,
             (50, 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
-            (0, 255, 0),
+            (0, 0, 0),
             2,
         )
+
+        text = f"dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
+        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+        cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
         cv2.putText(
             image,
-            f"dx: {diff_x[0]:.2f}m, dy: {diff_y[0]:.2f}m, dz: {diff_z[0]:.2f}m",
+            text,
             (50, 70),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
-            (0, 255, 0),
+            (0, 0, 0),
             2,
         )
 
@@ -117,19 +123,25 @@ while True:
         cv2.circle(image, (cx, cy), 5, (0, 0, 255), -1)  # Draw the center point
 
         # Annotate the image with the tag ID
-        cv2.putText(
-            image, str(tag_id), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2
-        )
+        text = str(tag_id)
+        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+        cv2.rectangle(image, (cx, cy - h), (cx + w, cy + 5), (0, 255, 255), -1)
+        cv2.putText(image, text, (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
         # Annotate the image with the tag family
         tag_family = r.tag_family.decode("utf-8")
+        text = f"{tag_family} id:{tag_id}"
+        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+        cv2.rectangle(
+            image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1
+        )
         cv2.putText(
             image,
-            f"{tag_family} id:{tag_id}",
+            text,
             (a[0], a[1] - 15),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
-            (0, 255, 0),
+            (0, 0, 0),
             2,
         )
 
