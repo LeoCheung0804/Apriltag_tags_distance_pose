@@ -1,5 +1,5 @@
-import numpy as np
 import cv2
+import numpy as np
 import glob
 
 # Define the chessboard size
@@ -22,7 +22,7 @@ objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
 
 # Get the list of images
-images = glob.glob('images/*.jpg')
+images = glob.glob('./images/*.png')
 
 for fname in images:
     img = cv2.imread(fname)
@@ -44,40 +44,44 @@ for fname in images:
 
 cv2.destroyAllWindows()
 
-# Perform camera calibration
-ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, frameSize, None, None)
+# Check if objpoints and imgpoints are not empty
+if objpoints and imgpoints:
+    # Perform camera calibration
+    ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, frameSize, None, None)
 
-# Save the camera calibration result for later use
-np.savez('calibration_data.npz', cameraMatrix=cameraMatrix, dist=dist, rvecs=rvecs, tvecs=tvecs)
+    # Save the camera calibration result for later use
+    np.savez('calibration_data.npz', cameraMatrix=cameraMatrix, dist=dist, rvecs=rvecs, tvecs=tvecs)
 
-# Undistort an image
-img = cv2.imread('images/cali5.png')
-h, w = img.shape[:2]
-newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w, h), 1, (w, h))
+    # Undistort an image
+    img = cv2.imread('images/cali5.png')
+    h, w = img.shape[:2]
+    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w, h), 1, (w, h))
 
-# Undistort
-dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
+    # Undistort
+    dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
 
-# Crop the image
-x, y, w, h = roi
-dst = dst[y:y+h, x:x+w]
-cv2.imwrite('caliResult1.png', dst)
+    # Crop the image
+    x, y, w, h = roi
+    dst = dst[y:y+h, x:x+w]
+    cv2.imwrite('caliResult1.png', dst)
 
-# Undistort with Remapping
-mapx, mapy = cv2.initUndistortRectifyMap(cameraMatrix, dist, None, newCameraMatrix, (w, h), 5)
-dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
+    # Undistort with Remapping
+    mapx, mapy = cv2.initUndistortRectifyMap(cameraMatrix, dist, None, newCameraMatrix, (w, h), 5)
+    dst = cv2.remap(img, mapx, mapy, cv2.INTER_LINEAR)
 
-# Crop the image
-x, y, w, h = roi
-dst = dst[y:y+h, x:x+w]
-cv2.imwrite('caliResult2.png', dst)
+    # Crop the image
+    x, y, w, h = roi
+    dst = dst[y:y+h, x:x+w]
+    cv2.imwrite('caliResult2.png', dst)
 
-# Reprojection Error
-mean_error = 0
+    # Reprojection Error
+    mean_error = 0
 
-for i in range(len(objpoints)):
-    imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], cameraMatrix, dist)
-    error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-    mean_error += error
+    for i in range(len(objpoints)):
+        imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], cameraMatrix, dist)
+        error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+        mean_error += error
 
-print("total error: {}".format(mean_error / len(objpoints)))
+    print("total error: {}".format(mean_error / len(objpoints)))
+else:
+    print("No chessboard corners found in images.")

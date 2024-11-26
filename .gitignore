@@ -114,3 +114,14 @@ dmypy.json
 
 # VS Code
 .vscode/
+
+# Ignore image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+
+# Ignore PDF files
+*.pdf
