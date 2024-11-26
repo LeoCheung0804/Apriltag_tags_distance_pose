@@ -72,36 +72,18 @@ while True:
 
     if len(results) >= 2:
         tag1, tag2 = results[0], results[1]
-        distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(
-            tag1, tag2
-        )
+        distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(tag1, tag2)
 
         # Display distance and differences on the image
         text = f"Distance: {distance:.3f}cm"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
         cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
-        cv2.putText(
-            image,
-            text,
-            (50, 50),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0, 0, 0),
-            2,
-        )
+        cv2.putText(image, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
 
         text = f"dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
         cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
-        cv2.putText(
-            image,
-            text,
-            (50, 70),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0, 0, 0),
-            2,
-        )
+        cv2.putText(image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
 
     for r in results:
         tag_id = r.tag_id
@@ -146,18 +128,8 @@ while True:
         tag_family = r.tag_family.decode("utf-8")
         text = f"{tag_family} id:{tag_id}"
         (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-        cv2.rectangle(
-            image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1
-        )
-        cv2.putText(
-            image,
-            text,
-            (a[0], a[1] - 15),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0, 0, 0),
-            2,
-        )
+        cv2.rectangle(image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1)
+        cv2.putText(image, text, (a[0], a[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,)
 
         # Convert rotation matrix to rotation vector
         rvec, _ = cv2.Rodrigues(r.pose_R)
