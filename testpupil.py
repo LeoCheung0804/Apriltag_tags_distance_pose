@@ -110,9 +110,12 @@ while True:
         # Show the rotation matrix
         # show_rotation_matrix(r)
 
-        # Calculate and print the distance to the camera
+        # Calculate the distance to the camera
         distance_to_camera = calculate_distance_to_camera(r)
-        print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
+
+        # Print the distance to the camera if 'd' is typed
+        if cv2.waitKey(1) & 0xFF == ord("d"):
+            print(f"Distance to camera for tag ID {tag_id}: {distance_to_camera:.3f}cm")
 
         # Get the coordinates of the corners
         corners = r.corners.astype(int)
