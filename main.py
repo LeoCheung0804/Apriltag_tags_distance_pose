@@ -86,24 +86,25 @@ def display_distance_and_differences(image, results):
     # Display distance and differences on the image
     text = f"Distance: {distance:.3f}cm"
     (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-    cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
+    cv2.rectangle(image, (50, 90 - h), (50 + w, 90 + 5), (0, 255, 255), -1)
     cv2.putText(
-        image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
+        image, text, (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
     )
 
     text = f"dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
     (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-    cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
+    cv2.rectangle(image, (50, 110 - h), (50 + w, 110 + 5), (0, 255, 255), -1)
     cv2.putText(
-        image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
+        image, text, (50, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
     )
     return distance, diff_x, diff_y, diff_z
 
-def save_reference_data(distance, diff_x, diff_y, diff_z):
-    text = f"refence : dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
-    cv2.rectangle(image, (50, 70 - h), (50 + w, 70 + 5), (0, 255, 255), -1)
+def save_reference_data(image, distance, diff_x, diff_y, diff_z):
+    text = f"reference_data: d:{distance}cm, dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
+    (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+    cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
     cv2.putText(
-        image, text, (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
+        image, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
     )
     reference_data = {
         "distance": distance,
@@ -114,6 +115,7 @@ def save_reference_data(distance, diff_x, diff_y, diff_z):
 
     with open("reference_data.json", "w") as json_file:
         json.dump(reference_data, json_file)
+    print("Reference data saved to reference_data.json")
     
 while True:
     ret, image = cap.read()
@@ -181,7 +183,7 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
     if cv2.waitKey(1) & 0xFF == ord("s"):
-        save_reference_data(distance, diff_x, diff_y, diff_z)
+        save_reference_data(image, distance, diff_x, diff_y, diff_z)
 
 cap.release()
 cv2.destroyAllWindows()
