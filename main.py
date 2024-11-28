@@ -5,7 +5,7 @@ import os
 import json
 
 # Initialize video capture (change 0 to your camera index if needed)
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 # Initialize the AprilTag detector
 detector = pl.Detector(families="tag36h11")
@@ -14,7 +14,13 @@ detector = pl.Detector(families="tag36h11")
 fx, fy = 416, 436  # Example focal length in pixels
 cx, cy = 327, 375  # Example center point in pixels
 camera_params = [fx, fy, cx, cy]
-tag_size = 0.077  # Replace with your actual tag size in meters
+tag_size = 0.097  # Replace with your actual tag size in meters
+
+# Tags distance threshold (in meters)
+tags_distance_threshold = 0.5
+
+# Default reference distance
+reference_distance = 0
 
 # Check if the calibration file exists
 calibration_file = "calibration_data.npz"
@@ -30,7 +36,6 @@ if os.path.exists(calibration_file):
 else:
     print(f"Calibration file {calibration_file} not found. Using default camera parameters.")
 
-
 def show_rotation_matrix(detection):
     """Print the rotation matrix of the detected tag."""
     if hasattr(detection, "pose_R"):
@@ -38,14 +43,12 @@ def show_rotation_matrix(detection):
     else:
         print(f"Rotation Matrix not available for tag ID {detection.tag_id}")
 
-
 def calculate_distance_and_differences(tag1, tag2):
     """Calculate the distance and differences between two detected tags."""
     t1, t2 = tag1.pose_t, tag2.pose_t
     distance = np.linalg.norm(t1 - t2) * 100  # Convert to cm
     diff_x, diff_y, diff_z = (t1 - t2) * 100  # Convert to cm
     return distance, diff_x, diff_y, diff_z
-
 
 def draw_axes(image, camera_params, tag_size, rvec, tvec):
     """Draw the 3D axes on the detected tag."""
@@ -68,55 +71,91 @@ def draw_axes(image, camera_params, tag_size, rvec, tvec):
 
     return image
 
-
 def calculate_distance_to_camera(detection):
     """Calculate the distance from the camera to the detected tag."""
     t = detection.pose_t
     distance = np.linalg.norm(t) * 100  # Convert to cm
     return distance
 
-
 def display_distance_and_differences(image, results):
     """Display the distance and differences between two detected tags."""
     tag1, tag2 = results[0], results[1]
-    distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(
-            tag1, tag2
-    )
+    distance, diff_x, diff_y, diff_z = calculate_distance_and_differences(tag1, tag2)
 
     # Display distance and differences on the image
     text = f"Distance: {distance:.3f}cm"
     (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
     cv2.rectangle(image, (50, 90 - h), (50 + w, 90 + 5), (0, 255, 255), -1)
-    cv2.putText(
-        image, text, (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
-    )
+    cv2.putText(image, text, (50, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
     text = f"dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
     (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
     cv2.rectangle(image, (50, 110 - h), (50 + w, 110 + 5), (0, 255, 255), -1)
-    cv2.putText(
-        image, text, (50, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
-    )
+    cv2.putText(image, text, (50, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
     return distance, diff_x, diff_y, diff_z
 
 def save_reference_data(image, distance, diff_x, diff_y, diff_z):
     text = f"reference_data: d:{distance}cm, dx: {diff_x[0]:.3f}cm, dy: {diff_y[0]:.3f}cm, dz: {diff_z[0]:.3f}cm"
     (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
     cv2.rectangle(image, (50, 50 - h), (50 + w, 50 + 5), (0, 255, 255), -1)
-    cv2.putText(
-        image, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
-    )
+    cv2.putText(image, text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
     reference_data = {
         "distance": distance,
         "diff_x": diff_x[0],
         "diff_y": diff_y[0],
         "diff_z": diff_z[0]
     }
+    reference_distance = distance
 
     with open("reference_data.json", "w") as json_file:
         json.dump(reference_data, json_file)
     print("Reference data saved to reference_data.json")
-    
+    return reference_distance
+
+def annotate_image_with_apriltag(image, r, camera_params, tag_size):
+    tag_id = r.tag_id
+
+    # Calculate the distance to the camera
+    distance_to_camera = calculate_distance_to_camera(r)
+
+    # Get the coordinates of the corners
+    corners = r.corners.astype(int)
+    a, b, c, d = tuple(corners[0]), tuple(corners[1]), tuple(corners[2]), tuple(corners[3])
+
+    # Draw the detected AprilTag's bounding box
+    cv2.line(image, a, b, (255, 0, 255), 2, lineType=cv2.LINE_AA)
+    cv2.line(image, b, c, (255, 0, 255), 2, lineType=cv2.LINE_AA)
+    cv2.line(image, c, d, (255, 0, 255), 2, lineType=cv2.LINE_AA)
+    cv2.line(image, d, a, (255, 0, 255), 2, lineType=cv2.LINE_AA)
+
+    # Draw the center of the AprilTag
+    (cx, cy) = (int(r.center[0]), int(r.center[1]))
+    cv2.circle(image, (cx, cy), 5, (0, 0, 255), -1)  # Draw the center point
+
+    # Annotate the image with the tag ID
+    text = str(tag_id)
+    (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+    cv2.rectangle(image, (cx, cy - h), (cx + w, cy + 5), (0, 255, 255), -1)
+    cv2.putText(image, text, (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+    # Annotate the image with the tag family
+    tag_family = r.tag_family.decode("utf-8")
+    text = f"{tag_family} id:{tag_id}"
+    (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+    cv2.rectangle(image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1)
+    cv2.putText(image, text, (a[0], a[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+    # Convert rotation matrix to rotation vector
+    rvec, _ = cv2.Rodrigues(r.pose_R)
+    tvec = r.pose_t
+
+    # Draw the axes for each detected tag
+    image = draw_axes(image, camera_params, tag_size, rvec, tvec)
+
+    return image
+
 while True:
     ret, image = cap.read()
     if not ret:
@@ -131,59 +170,22 @@ while True:
         distance, diff_x, diff_y, diff_z = display_distance_and_differences(image, results)
 
     for r in results:
-        tag_id = r.tag_id
+        image = annotate_image_with_apriltag(image, r, camera_params, tag_size)
 
-        # Calculate the distance to the camera
-        distance_to_camera = calculate_distance_to_camera(r)
-
-        # Get the coordinates of the corners
-        corners = r.corners.astype(int)
-        a, b, c, d = (
-            tuple(corners[0]),
-            tuple(corners[1]),
-            tuple(corners[2]),
-            tuple(corners[3]),
-        )
-
-        # Draw the detected AprilTag's bounding box
-        cv2.line(image, a, b, (255, 0, 255), 2, lineType=cv2.LINE_AA)
-        cv2.line(image, b, c, (255, 0, 255), 2, lineType=cv2.LINE_AA)
-        cv2.line(image, c, d, (255, 0, 255), 2, lineType=cv2.LINE_AA)
-        cv2.line(image, d, a, (255, 0, 255), 2, lineType=cv2.LINE_AA)
-
-        # Draw the center of the AprilTag
-        (cx, cy) = (int(r.center[0]), int(r.center[1]))
-        cv2.circle(image, (cx, cy), 5, (0, 0, 255), -1)  # Draw the center point
-
-        # Annotate the image with the tag ID
-        text = str(tag_id)
-        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-        cv2.rectangle(image, (cx, cy - h), (cx + w, cy + 5), (0, 255, 255), -1)
-        cv2.putText(image, text, (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-
-        # Annotate the image with the tag family
-        tag_family = r.tag_family.decode("utf-8")
-        text = f"{tag_family} id:{tag_id}"
-        (w, h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-        cv2.rectangle(
-            image, (a[0], a[1] - 15 - h), (a[0] + w, a[1] - 15 + 5), (0, 255, 255), -1
-        )
-        cv2.putText(
-            image, text, (a[0], a[1] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2,
-        )
-
-        # Convert rotation matrix to rotation vector
-        rvec, _ = cv2.Rodrigues(r.pose_R)
-        tvec = r.pose_t
-
-        # Draw the axes for each detected tag
-        image = draw_axes(image, camera_params, tag_size, rvec, tvec)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        break
+    elif key == ord("s"):
+        reference_distance = save_reference_data(image, distance, diff_x, diff_y, diff_z)
+    elif key == ord("c"):
+        if distance - reference_distance > tags_distance_threshold:
+            print("Tags are too far apart")
+            image = cv2.putText(image, "Tags are too far apart", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        else:
+            print("Tags are close enough")
+            image = cv2.putText(image, "Tags are close enough", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
 
     cv2.imshow("AprilTags", image)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-    if cv2.waitKey(1) & 0xFF == ord("s"):
-        save_reference_data(image, distance, diff_x, diff_y, diff_z)
 
 cap.release()
 cv2.destroyAllWindows()
